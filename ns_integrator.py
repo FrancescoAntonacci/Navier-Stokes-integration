@@ -41,7 +41,7 @@ def laplacian(f, dx):
 # --------------------------------------------------------------------
 # Fluid dynamics updates
 # --------------------------------------------------------------------
-def ns(u, rho, p, mu=1.0, zeta=1.0, dt=1.0, dx=1.0):
+def ns(u, rho, p, mu, zeta, dt, dx):
     """
     Vectorized explicit Euler step for compressible Navier-Stokes equations.
     
@@ -91,7 +91,7 @@ def polytropic(rho, kappa=1.0, gamma=1.4):
     """
     Polytropic equation of state: p = kappa * rho^gamma
     """
-    return kappa * rho**gamma
+    return kappa *(rho**gamma)
 
 def temporal_evolution(u, rho, p, dt=1.0, dx=1.0, mu=1.0, zeta=1.0, kappa=1.0, gamma=1.4):
     """
@@ -136,10 +136,10 @@ def temporal_evolution(u, rho, p, dt=1.0, dx=1.0, mu=1.0, zeta=1.0, kappa=1.0, g
 # --------------------------------------------------------------------
 # Simulation parameters
 # --------------------------------------------------------------------
-Nx = 40              # Grid size in each direction
+Nx = 50              # Grid size in each direction
 dx = 1            # Spatial step [?]
-t0,t1=0,10   # Time step [?]
-CFL=0.01            # Simulation convergence parameter
+t0,t1=0,5 # Time step [?]
+CFL=0.001         # Simulation convergence parameter
 skip=20
 
 
@@ -156,7 +156,7 @@ grid.origin  = (0.0, 0.0, 0.0)
 # --------------------------------------------------------------------
 mu=1
 kappa=1
-gamma=1.4
+gamma=2
 zeta=1
 
 # --------------------------------------------------------------------
@@ -168,10 +168,20 @@ x = np.arange(Nx) - Nx//2
 y = np.arange(Nx) - Nx//2
 z = np.arange(Nx) - Nx//2
 X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
-rho = 1 + 9 * np.exp(-(X**2 + Y**2 + Z**2)/(2*(Nx/10)**2))
+rho =  1+9* np.exp(-(X**2+ Y**2+ Z**2)/(2*(Nx/3)**2))
+u = np.zeros((3, Nx, Nx, Nx))  # Velocity field (u_x, u_y, u_z)
 
+aa = Nx // 3
+bb = Nx // 2
 
-u = np.zeros((3, Nx, Nx, Nx))      # Velocity field (u_x, u_y, u_z)
+# Initial velocity
+
+u[0,
+  bb -( aa),
+  bb - aa : bb + aa,
+  bb - aa : bb + aa
+] = 4
+
 p = polytropic(rho)        # Pressure field
 
 t=t0
@@ -196,8 +206,6 @@ print("The simulation has started.")
 t=t0
 n=0
 
-
-# --- inizializzazione da mettere prima del while ---
 pvd_entries = []
 frame = 0
 
