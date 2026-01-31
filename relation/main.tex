@@ -1,0 +1,334 @@
+\documentclass[a4paper]{beamer}
+% Preambolo
+\newcommand{\me}{\small}    
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[italian]{babel}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref} 
+
+\graphicspath{{immagini_presentazione/}}
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{\node[shape=circle,draw,inner sep=1pt] (char) {#1};}}
+% ============================================================
+%                   INTESTAZIONE E STILE
+% ============================================================
+
+\title{Integrazione di Navier-Stokes e applicazioni}
+\author{\texorpdfstring{F.A.F. Antonacci}{F.A.F. Antonacci}}
+\date{\today}
+
+\setbeamercolor{palette primary}{bg=blue!70, fg=white}
+\setbeamertemplate{section in toc}[circle]
+\setbeamertemplate{navigation symbols}{}
+\newcounter{mysection} 
+\newcommand{\mysections}{1,2,3,4,5,6,7,8} 
+
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=8mm,dp=2mm,leftskip=2mm,rightskip=10mm]{palette primary}%
+    \tikz[baseline]{%
+      \foreach \s [count=\i] in \mysections {
+        \ifnum\i=\value{section}
+          \fill[white] (\i*5mm,3mm) circle (3pt); 
+        \else
+          \draw[white!50] (\i*5mm,3mm) circle (3pt); 
+        \fi
+      }
+      \node[anchor=east, white, font=\me]
+        at (\paperwidth-3mm,3mm)
+        {\insertsectionhead};
+    }
+  \end{beamercolorbox}%
+}
+
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox to \paperwidth{%
+    \hspace{0.02cm} \begin{tikzpicture}%
+             \node  [opacity=0.5]{\includegraphics[height=7mm]{immagini_presentazione/unipopipopi_transparent.png}};%
+  \end{tikzpicture}
+    \hfill
+    \large \insertframenumber{} / \inserttotalframenumber
+    \hspace{0.2cm}
+  }%
+  \vskip 0.2cm
+}
+
+% ============================================================
+%                   TITLE PAGE & INDICE
+% ============================================================
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Indice}
+  \tableofcontents
+\end{frame}
+
+
+% ============================================================
+%                   Integrazione di Navier stokes
+% ============================================================
+
+\section{Idea}
+
+\begin{frame}
+  \frametitle{Navier-Stokes comprimibile}  
+  Ho assunto che il mio fluido non assorba né conduca calore, sia comprimibile e viscoso.
+  \[
+    \frac{d\vec{u}}{dt} = - (\vec{u} \cdot \nabla) \vec{u}- \frac{\nabla p}{\rho} 
+    + \frac{\mu \nabla^2 \vec{u}}{\rho} 
+    + \frac{(\zeta + \mu/3) \nabla (\nabla \cdot \vec{u})}{\rho} 
+    + \frac{\vec{F}}{\rho}
+  \]
+dove:
+
+\begin{itemize}
+    \item \(\text{conv} = (\vec{u} \cdot \nabla) \vec{u}\) è il termine convettivo, che rappresenta il trasporto della velocità dal flusso stesso;
+    \item \(- \nabla p / \rho\) è il gradiente di pressione, responsabile dell’accelerazione dovuta alla pressione;
+    \item \(\mu \, \nabla^2 \vec{u}/\rho\) rappresenta la viscosità del fluido (diffusione della velocità);
+    \item \((\zeta + \mu/3) \, \nabla (\nabla \cdot \vec{u}) / \rho\) è il termine viscosità bulk, che interviene se il fluido è comprimibile;
+    \item \(\vec{F}/\rho\) è la forza esterna applicata sul fluido.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Incomprimibilità o politropica e continuità?}  
+  Ho scelto di introdurre una politropica invece di imporre l'incomprimibilità per i seguenti motivi:
+  \begin{itemize}
+    \item supponendo processi adiabatici posso controllare $\kappa$ della legge $p=\kappa \rho^\gamma$;
+    \item posso aumentare $\kappa$ in modo arbitrario per aumentare la velocità del suono;
+    \item non ho voglia di introdurre la risoluzione dell'equazione del laplaciano per la pressione: introdurrei pure ulteriore rumore numerico;
+    \item scrivo meno codice.
+  \end{itemize}
+
+  Ho utilizzato l'equazione di continuità:
+       $$\frac{\partial \rho}{\partial t}+\nabla \cdot (\rho \vec{u})=0.$$
+  Con le tre equazioni appena enunciate ho chiuso il sistema.
+\end{frame}
+
+\begin{frame}
+
+    \frametitle{La discretizzazione}  
+    \begin{columns}
+      \begin{column}{0.5\textwidth}
+        \begin{itemize}
+          \item Utilizzo un integratore euleriano;
+          \item utilizzo un approccio euleriano: spazialmente costruisco una griglia;
+          \item iterativamente calcolo lo stato successivo utilizzando il precedente;
+          \item per aggiornare la densità uso continuità;
+          \item per aggiornare il campo delle velocità uso Navier-Stokes;
+          \item per determinare la pressione utilizzo la politropica.
+        \end{itemize}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}
+          \includegraphics[width=1\textwidth]{grid.png}
+          \caption{Esempio di griglia usata nell'integrazione. Si è presa un'immagine ravvicinata per migliorarne la visibilità.}
+        \end{figure}  
+      \end{column}
+    \end{columns}
+
+\end{frame}
+
+
+% ============================================================
+%                   Convergenza
+% ============================================================
+\section{Convegenza}
+\begin{frame}
+  \frametitle{Convergenza della simulazione}  
+  Il brutto vizio delle integrazioni numeriche è che amano divergere se il passo temporale non è 
+  sufficientemente piccolo:
+  desidero che la risoluzione temporale della mia simulazione sia più grande delle velocità caratteristiche del mio problema.
+  \begin{itemize}
+    \item $dx = 1$;
+    \item $dt= CFL \frac{dx}{\left|\vec{u}\right|_{max}+c_{s,max}}$
+    \item $c_s = \frac{\partial p}{\partial \rho}|_{s}= \sqrt{\gamma  p / \rho} $ 
+           è la velocità locale del suono supposta la compressione adiabatica del fluido;
+    \item   $CFL$ è un fattore di adimensionale convergenza della simulazione.
+
+  \end{itemize}
+
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Courant-Friedrichs-Lewy}  
+  \begin{itemize}
+    \item   La simulazione, siccome si basa su in integratore euleriano $\Rightarrow$ 
+    \item   dovrebbe divergere come $1/CFL$ a meno che non ci siano soluzioni stabili.
+    \item   Il limite nella scelta di $CFL$ è il tempo di calcolo e la memoria del computer$\Rightarrow$  
+    \item   per ovviare a questo si registra uno stato della griglia saltando un numero proporzionale a $CFL$.
+
+  \end{itemize}
+
+\end{frame}
+
+% ============================================================
+%                   Condizioni al contorno
+% ============================================================
+
+\section{Condizioni al contorno}
+\begin{frame}
+  \frametitle{Condizioni al controno}  
+    Le condizioni al contorno sono deteminate nel codice dalla definizione delle derivate (ho utilizzato \texttt{gradient()} di \texttt{numpy} ).
+    Il bordo, a causa di  \texttt{gradient()}, assume che il mezzo sia infinitamente esteso e identico alle caselle adiacenti.
+    Detta $\hat{n}$ la normale al bordo, si desidera: 
+    $$(\hat{n} \cdot \nabla) \vec{u}\leq0; (\hat{n} \cdot \nabla) \rho\leq0.$$
+    Altrimenti le grandezze divergono esponenzialmente.
+    Sempre per questo motivo le simulazioni sono valide finchè non si raggiunge il bordo, 
+    a quel punto la simulazione diverge, in quanto c'è un ritorno legato al dominio finito.
+\end{frame}
+
+
+% ============================================================
+%                   Profilo gaussiano di densità
+% ============================================================
+\section{Profilo gaussiano di densità}
+
+\begin{frame}
+  \frametitle{Profilo gaussiano di densità}
+
+  \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/gaussian1.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/gaussian1.png}
+  }
+  \vspace{0.5em}
+\end{frame}
+
+
+% ============================================================
+%                   Profilo gaussiano di densità 2
+% ============================================================
+\section{Profilo gaussiano di densità}
+
+\begin{frame}
+  \frametitle{Variante del profilo gaussiano di densità}
+
+  \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/gaussian2.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/gaussian2.png}
+  }
+  \vspace{0.5em}
+\end{frame}
+% ============================================================
+%                   Onde sonore
+% ============================================================
+\section{Onda sonora}
+
+\begin{frame}
+  \frametitle{Onda sonora}  
+      \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/planes.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/planes.png}
+  }
+\end{frame}
+
+% ============================================================
+%                   Vortici
+% ============================================================
+\section{Vortici}
+\begin{frame}
+  \frametitle{Vortice lineare}
+
+  \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/linvort.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/linvort.png}
+  }
+  \vspace{0.5em}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Vortice di potenziale}
+
+  \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvort.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvort.png}
+  }
+  \vspace{0.5em}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Vortice di potenziale con viscosità nulla}
+
+  \centering
+  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvortnu0.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvortnu0.png}
+  }
+  \vspace{0.5em}
+\end{frame}
+% ============================================================
+%                   Jet
+% ============================================================
+\section{Jet puntiforme}
+\begin{frame}
+  \frametitle{Jet puntiforme: Trattazione analitica alla Landau}  
+    Supponiamo che in fluido venga immessa della quantità di moto da una sorgente puntiforme con le seguenti ipotesi:
+    \begin{itemize}
+      \item osservare da lontano la sorgente;
+      \item item in coordinate sferiche ($r,\theta,\phi$) le velocità siano ($u,v,w$);
+      \item simmetria per rotazione $\Rightarrow$ $r,\theta$ sono le uniche variabili indipendenti, $w=0$;
+      \item stream-function $\psi$  $\Rightarrow$ $u=\frac{1}{r^2 \sin \theta}\frac{\partial \psi}{\partial \theta}
+                                    \,v=-\frac{1}{r \sin \theta}\frac{\partial \psi}{\partial \theta}$;
+      \item per la conservazione del momento deve scalare come $r^{-1}$
+      \item $\Rightarrow \psi=r \alpha f(\theta)$, con $\alpha$ costante.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Jet puntiforme}  
+    \begin{itemize}
+      \item $f=\frac{2 \sin^2\theta}{1+ c -\cos \theta}$
+      \item $\psi=\frac{2 \alpha \sin^2\theta}{1+ c -\cos \theta}$
+      \item $u=\frac{4\alpha(1+c-\cos \theta) \cos \theta-2\sin^2 \theta}{r(1+c-\cos\theta)^2}$
+      \item $v=\frac{-2\alpha \sin^2 \theta}{r(1+c-\cos\theta)}$
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Trattazione analitica alla Landau}  
+      \begin{figure}
+        \includegraphics[width=0.65\textwidth]{anal_get2D.pdf}
+      \end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Velocità costante}  
+    \centering
+      \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet1.mp4}{
+    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet1.png}
+  }
+\end{frame}
+
+\begin{frame}
+    \frametitle{Forza costante}  
+  \begin{columns}
+      \begin{column}{0.5\textwidth}      
+        \begin{figure}
+        \includegraphics[width=\textwidth]{jet2closeup.png}
+      \end{figure}
+    \end{column}
+  \begin{column}{0.5\textwidth}
+        \centering
+        \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet2.mp4}{
+            \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet2.png}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Aggiustando il bordo...}  
+          \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet3.mp4}{
+              \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet3.png}
+  }
+\end{frame}
+\end{document}
