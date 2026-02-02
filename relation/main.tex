@@ -80,13 +80,11 @@
   \frametitle{Navier-Stokes comprimibile}  
   Ho assunto che il mio fluido non assorba né conduca calore, sia comprimibile e viscoso.
   \[
-    \frac{d\vec{u}}{dt} = - (\vec{u} \cdot \nabla) \vec{u}- \frac{\nabla p}{\rho} 
+    \frac{\partial\vec{u}}{\partial t} = - (\vec{u} \cdot \nabla) \vec{u}- \frac{\nabla p}{\rho} 
     + \frac{\mu \nabla^2 \vec{u}}{\rho} 
     + \frac{(\zeta + \mu/3) \nabla (\nabla \cdot \vec{u})}{\rho} 
     + \frac{\vec{F}}{\rho}
   \]
-dove:
-
 \begin{itemize}
     \item \(\text{conv} = (\vec{u} \cdot \nabla) \vec{u}\) è il termine convettivo, che rappresenta il trasporto della velocità dal flusso stesso;
     \item \(- \nabla p / \rho\) è il gradiente di pressione, responsabile dell’accelerazione dovuta alla pressione;
@@ -102,7 +100,7 @@ dove:
   Ho scelto di introdurre una politropica invece di imporre l'incomprimibilità per i seguenti motivi:
   \begin{itemize}
     \item supponendo processi adiabatici posso controllare $\kappa$ della legge $p=\kappa \rho^\gamma$;
-    \item posso aumentare $\kappa$ in modo arbitrario per aumentare la velocità del suono;
+    \item posso aumentare $\kappa$ in modo arbitrario per aumentare la velocità del suono fino a rendere il fluido incomprimibile;
     \item non ho voglia di introdurre la risoluzione dell'equazione del laplaciano per la pressione: introdurrei pure ulteriore rumore numerico;
     \item scrivo meno codice.
   \end{itemize}
@@ -118,12 +116,13 @@ dove:
     \begin{columns}
       \begin{column}{0.5\textwidth}
         \begin{itemize}
-          \item Utilizzo un integratore euleriano;
-          \item utilizzo un approccio euleriano: spazialmente costruisco una griglia;
-          \item iterativamente calcolo lo stato successivo utilizzando il precedente;
-          \item per aggiornare la densità uso continuità;
-          \item per aggiornare il campo delle velocità uso Navier-Stokes;
-          \item per determinare la pressione utilizzo la politropica.
+          \item \textbf{Integratore euleriano}
+          \item \textbf{Approccio euleriano}
+          \begin{itemize}
+            \item per aggiornare la densità uso continuità;
+            \item per aggiornare il campo delle velocità uso Navier-Stokes;
+            \item per determinare la pressione utilizzo la politropica.          
+          \end{itemize}
         \end{itemize}
       \end{column}
 
@@ -141,10 +140,10 @@ dove:
 % ============================================================
 %                   Convergenza
 % ============================================================
-\section{Convegenza}
+\section{Convergenza}
 \begin{frame}
   \frametitle{Convergenza della simulazione}  
-  Il brutto vizio delle integrazioni numeriche è che amano divergere se il passo temporale non è 
+  Le integrazioni numeriche divergono se il passo temporale non è 
   sufficientemente piccolo:
   desidero che la risoluzione temporale della mia simulazione sia più grande delle velocità caratteristiche del mio problema.
   \begin{itemize}
@@ -162,8 +161,8 @@ dove:
 \begin{frame}
   \frametitle{Courant-Friedrichs-Lewy}  
   \begin{itemize}
-    \item   La simulazione, siccome si basa su in integratore euleriano $\Rightarrow$ 
-    \item   dovrebbe divergere come $1/CFL$ a meno che non ci siano soluzioni stabili.
+    \item   La simulazione, siccome si basa su un integratore euleriano $\Rightarrow$ 
+    \item   le grandezze integrate divergere come $CFL \propto 1/N$ (con $N$ numero di punti in cui si divide il passo temporale) a meno che non ci siano soluzioni stabili.
     \item   Il limite nella scelta di $CFL$ è il tempo di calcolo e la memoria del computer$\Rightarrow$  
     \item   per ovviare a questo si registra uno stato della griglia saltando un numero proporzionale a $CFL$.
 
@@ -178,13 +177,17 @@ dove:
 \section{Condizioni al contorno}
 \begin{frame}
   \frametitle{Condizioni al controno}  
-    Le condizioni al contorno sono deteminate nel codice dalla definizione delle derivate (ho utilizzato \texttt{gradient()} di \texttt{numpy} ).
-    Il bordo, a causa di  \texttt{gradient()}, assume che il mezzo sia infinitamente esteso e identico alle caselle adiacenti.
-    Detta $\hat{n}$ la normale al bordo, si desidera: 
-    $$(\hat{n} \cdot \nabla) \vec{u}\leq0; (\hat{n} \cdot \nabla) \rho\leq0.$$
-    Altrimenti le grandezze divergono esponenzialmente.
-    Sempre per questo motivo le simulazioni sono valide finchè non si raggiunge il bordo, 
-    a quel punto la simulazione diverge, in quanto c'è un ritorno legato al dominio finito.
+    \begin{itemize}
+      \item condizioni al contorno sono deteminate nel codice dalla definizione delle derivate (\texttt{gradient()} di \texttt{numpy});
+      \item il mezzo è assunto infinito e il prologato in maniera continua;
+      \item $\Rightarrow$ Detta $\hat{n}$ la normale al bordo, si desidera:
+          \begin{itemize}
+            \item $(\hat{n} \cdot \nabla) \vec{u}\leq0$, 
+            \item $(\hat{n} \cdot \nabla) \rho\leq0$;
+          \end{itemize} 
+      \item simulazioni sono valide finchè non si raggiunge il bordo;
+      \item altrimenti la simulazione diverge.
+    \end{itemize}
 \end{frame}
 
 
@@ -197,26 +200,32 @@ dove:
   \frametitle{Profilo gaussiano di densità}
 
   \centering
-  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/gaussian1.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/gaussian1.png}
-  }
-  \vspace{0.5em}
+  \begin{figure}
+    \href{run:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/gaussian1.mp4}{
+      \includegraphics[width=0.5\textwidth]{immagini_presentazione/gaussian1.png}
+    }
+    \caption{Profilo gaussiano di densità in simmetria sferica che parte fermo e viene lasciato evolvere. Si marcano due isobare a due valori diversi.}
+  \end{figure}
+
 \end{frame}
 
 
 % ============================================================
 %                   Profilo gaussiano di densità 2
 % ============================================================
-\section{Profilo gaussiano di densità}
+\section{Variante del profilo gaussiano di densità}
 
 \begin{frame}
   \frametitle{Variante del profilo gaussiano di densità}
 
-  \centering
+    \centering
+  \begin{figure}
   \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/gaussian2.mp4}{
     \includegraphics[width=0.6\textwidth]{immagini_presentazione/gaussian2.png}
-  }
-  \vspace{0.5em}
+    }
+    \caption{Profilo gaussiano di densità in simmetria sferica, di cui una sezione ha una velocità iniziale. Si rappresentano un isobara e il campo delle velocità.}
+  \end{figure}
+
 \end{frame}
 % ============================================================
 %                   Onde sonore
@@ -224,11 +233,14 @@ dove:
 \section{Onda sonora}
 
 \begin{frame}
-  \frametitle{Onda sonora}  
+  \frametitle{Onda sonora}    
       \centering
-  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/planes.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/planes.png}
-  }
+        \begin{figure}
+              \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/planes.mp4}{
+              \includegraphics[width=0.6\textwidth]{immagini_presentazione/planes.png}}
+                \caption{Profilo gaussiano di densità in simmetria planare con velocità modulata gaussianamente e ortogonale al gradiente della densità.
+                 Si rappresentano un isobara e il campo delle velocità.}
+        \end{figure}
 \end{frame}
 
 % ============================================================
@@ -237,33 +249,36 @@ dove:
 \section{Vortici}
 \begin{frame}
   \frametitle{Vortice lineare}
-
-  \centering
-  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/linvort.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/linvort.png}
-  }
-  \vspace{0.5em}
+        \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/linvort.mp4}{
+                  \includegraphics[width=0.6\textwidth]{immagini_presentazione/linvort.png}}
+                \caption{Densità costante, campo delle velocità derteminato da $\vec{v}=\vec{\omega}\times \vec{r}$.
+                Il fluido è viscido e comprimibile, tuttavia siamo nel limite in cui la velocità del suono è alta.}
+        \end{figure}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{Vortice di potenziale}
-
-  \centering
-  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvort.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvort.png}
-  }
-  \vspace{0.5em}
+          \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvort.mp4}{
+                  \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvort.png}}
+                \caption{Densità costante, campo delle velocità derteminato da $\vec{v}=\frac{\kappa \hat{\phi}}{r}$.
+                Il fluido è viscido e comprimibile, tuttavia siamo nel limite in cui la velocità del suono è alta.}
+        \end{figure}
 \end{frame}
 
 \begin{frame}
   \frametitle{Vortice di potenziale con viscosità nulla}
-
-  \centering
-  \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvortnu0.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvortnu0.png}
-  }
-  \vspace{0.5em}
+                    \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/potvortnu0.mp4}{
+                  \includegraphics[width=0.6\textwidth]{immagini_presentazione/potvortnu0.png}}
+                \caption{Densità costante, campo delle velocità derteminato da $\vec{v}=\frac{\kappa \hat{\phi}}{r}$.
+                Il fluido è inviscido e comprimibile, tuttavia siamo nel limite in cui la velocità del suono è alta.}
+        \end{figure}
 \end{frame}
 % ============================================================
 %                   Jet
@@ -273,8 +288,9 @@ dove:
   \frametitle{Jet puntiforme: Trattazione analitica alla Landau}  
     Supponiamo che in fluido venga immessa della quantità di moto da una sorgente puntiforme con le seguenti ipotesi:
     \begin{itemize}
+      \item fenomeno all'equilibrio (il che implica ad esempio $\nabla \cdot \vec{u}=0, \,\partial_t \rho=0$); 
       \item osservare da lontano la sorgente;
-      \item item in coordinate sferiche ($r,\theta,\phi$) le velocità siano ($u,v,w$);
+      \item in coordinate sferiche ($r,\theta,\phi$) le velocità siano ($u,v,w$);
       \item simmetria per rotazione $\Rightarrow$ $r,\theta$ sono le uniche variabili indipendenti, $w=0$;
       \item stream-function $\psi$  $\Rightarrow$ $u=\frac{1}{r^2 \sin \theta}\frac{\partial \psi}{\partial \theta}
                                     \,v=-\frac{1}{r \sin \theta}\frac{\partial \psi}{\partial \theta}$;
@@ -284,7 +300,8 @@ dove:
 \end{frame}
 
 \begin{frame}
-  \frametitle{Jet puntiforme}  
+  \frametitle{Soluzione analitica del Jet puntiforme}  
+    Imponendo Navier-Stokes per $u$ e per $v$ con passaggi non ovvi si ottiene:
     \begin{itemize}
       \item $f=\frac{2 \sin^2\theta}{1+ c -\cos \theta}$
       \item $\psi=\frac{2 \alpha \sin^2\theta}{1+ c -\cos \theta}$
@@ -295,18 +312,22 @@ dove:
 
 
 \begin{frame}
-  \frametitle{Trattazione analitica alla Landau}  
+  \frametitle{Plot della soluzione analitica}  
       \begin{figure}
-        \includegraphics[width=0.65\textwidth]{anal_get2D.pdf}
+        \includegraphics[width=0.50\textwidth]{anal_get2D.pdf}
+        \caption{Sezione del campo delle velocità nel piano X-Z della soluzione analitica del Jet-puntiforme.}
       \end{figure}
 \end{frame}
 
 \begin{frame}
   \frametitle{Velocità costante}  
-    \centering
-      \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet1.mp4}{
-    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet1.png}
-  }
+          \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet3.mp4}{
+                    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet3.png}}
+                \caption{Fluido con densità costante. Velocità al centro mantenuta costante e modulata con una gaussiana centrata e molto stretta.
+                          Si rappresenta il campo delle velocità.}
+        \end{figure}
 \end{frame}
 
 \begin{frame}
@@ -319,16 +340,49 @@ dove:
     \end{column}
   \begin{column}{0.5\textwidth}
         \centering
-        \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet2.mp4}{
-            \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet2.png}}
-    \end{column}
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet2.mp4}{
+                    \includegraphics[width=0.8\textwidth]{immagini_presentazione/jet2.png}}
+                \caption{Fluido con densità costante. Forza costante modulata con una gaussiana centrata e molto stretta.
+                          Si rappresenta il campo delle velocità.}
+        \end{figure}    
+      \end{column}
   \end{columns}
 \end{frame}
 
 \begin{frame}
   \frametitle{Aggiustando il bordo...}  
-          \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet3.mp4}{
-              \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet3.png}
-  }
+        \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet3.mp4}{
+                    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet3.png}}
+                \caption{Fluido con densità costante. Forza costante modulata con una gaussiana centrata e molto stretta.
+                          Si tenta di eliminare il flusso di ritorno imponendo che la velocità e la densità siano costanti al contorno.
+                          Si rappresenta il campo delle velocità.}
+        \end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Vediamo se la soluzione analitica è stabile numericamente.}  
+        \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet4.mp4}{
+                    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet4.png}}
+                \caption{Evoluzione temporale della soluzione analitica del Jet puntiforme. 
+                          E' stato necessario introdurre rendere la descrizione inesatta per evitare divergenze numeriche almeno all'inizio. 
+                          Si rappresenta il campo delle velocità.}
+        \end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Tuttavia allargando...}  
+        \centering
+        \begin{figure}
+                \href{file:/media/candido/Extreme SSD2/Unipi/Terzo anno/Fluidodinamica/relation/immagini_presentazione/jet5.mp4}{
+                    \includegraphics[width=0.6\textwidth]{immagini_presentazione/jet5.png}}
+                \caption{Fluido con densità costante. Forza costante modulata con una gaussiana centrata e molto stretta.
+                          Si tenta di eliminare il flusso di ritorno imponendo che la velocità e la densità siano costanti al contorno.
+                          Si rappresenta il campo delle velocità.}
+        \end{figure}
 \end{frame}
 \end{document}
